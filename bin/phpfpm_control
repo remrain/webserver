@@ -1,0 +1,75 @@
+#!/bin/sh
+
+PHPFPM_ROOT=`dirname "${0}"`/..
+cd "${PHPFPM_ROOT}" || exit 1
+PHPFPM_ROOT=`readlink -f "${PHPFPM_ROOT}"`
+
+PHPFPM_CONF=etc/php-fpm.conf
+PHPINI_CONF=etc/php.ini
+PHPFPM_PID=logs/php-fpm.pid
+PHPFPM="./sbin/php-fpm -p . -c ${PHPINI_CONF} -y ${PHPFPM_CONF} -D -g ${PHPFPM_PID}"
+
+
+phpfpm_help(){
+    echo "${0} <start|stop|restart>"
+    exit 1
+}
+
+phpfpm_start(){
+    ${PHPFPM}
+    return $?
+}
+
+phpfpm_stop(){
+    PID=`cat "${PHPFPM_PID}"`
+    if [ $? != 0 ]; then
+        echo "${PHPFPM_PID} is not exists"
+        return 0
+    fi
+    ps --pid "${PID}" &>/dev/null
+    if [ $? != 0 ]; then
+        echo "php-fpm is not running"
+        return 0
+    fi
+    kill "${PID}"
+    if [ $? != 0 ]; then
+        echo "kill ${PID} failed"
+        return $?
+    fi
+    sleep 1
+    ps --pid "${PID}" &>/dev/null
+    if [ $? = 0 ]; then
+        echo "php-fpm is still running, kill -9 php-fpm"
+        kill -9 "${PID}"
+        sleep 1
+        ps --pid "${PID}" &>/dev/null
+        if [ $? = 0 ]; then
+            echo "kill -9 php-fpm failed"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+phpfpm_restart(){
+    phpfpm_stop && phpfpm_start
+    return $?
+}
+
+case "${1}" in
+    start|stop|restart)
+        "phpfpm_${1}"
+        ;;
+    *)
+        phpfpm_help
+        ;;
+esac
+
+if [ $? -ne 0 ]; then
+    echo "[FAIL] ${1}" 1>&2
+    exit 1
+fi
+
+echo "[OK] ${1}"
+exit 0
+

@@ -1,0 +1,52 @@
+#!/bin/sh
+
+NGINX_ROOT=`dirname "${0}"`/..
+cd "${NGINX_ROOT}" || exit 1
+NGINX_ROOT=`readlink -f "${NGINX_ROOT}"`
+
+NGINX_CONF=etc/nginx.conf
+NGINX="./sbin/nginx -p . -c ${NGINX_CONF}"
+
+
+nginx_help(){
+    echo "${0} <start|stop|restart|reload>"
+    exit 1
+}
+
+nginx_start(){
+    ${NGINX}
+    return $?
+}
+
+nginx_stop(){
+    ${NGINX} -s stop
+    return $?
+}
+
+nginx_restart(){
+    nginx_stop && nginx_start
+    return $?
+}
+
+nginx_reload(){
+    ${NGINX} -s reload
+    return $?
+}
+
+case "${1}" in
+    start|stop|restart|reload)
+        "nginx_${1}"
+        ;;
+    *)
+        nginx_help
+        ;;
+esac
+
+if [ $? -ne 0 ]; then
+    echo "[FAIL] ${1}" 1>&2
+    exit 1
+fi
+
+echo "[OK] ${1}"
+exit 0
+
