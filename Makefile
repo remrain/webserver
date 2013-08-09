@@ -49,6 +49,7 @@ install:
 	$(CP) -r $(BUILD)/sbin $(PREFIX)
 	$(CP) -r $(BUILD)/php $(PREFIX)
 	$(CP) -r $(BUILD)/etc $(PREFIX)
+	$(CP) -r $(wildcard $(BUILD)/conf/*) $(PREFIX)/etc
 	$(CP) -r $(ROOT)/etc $(PREFIX)
 	$(CP) -r $(ROOT)/bin $(PREFIX)
 	$(CP) -r $(ROOT)/htdocs $(PREFIX)
