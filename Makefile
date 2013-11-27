@@ -1,4 +1,4 @@
-.PHONY: all clean install untar nginx php
+.PHONY: all clean install untar nginx php curl
 
 PREFIX ?= $(shell pwd)/output
 
@@ -8,8 +8,9 @@ SOURCE=$(ROOT)/src
 TARTMP=$(ROOT)/tmpsrc
 
 PHPVER=5.4.17
-NGINXVER=1.4.2
+NGINXVER=1.4.4
 PCREVER=8.33
+CURLVER=7.33.0
 
 RM=rm -f
 MV=mv -f
@@ -22,16 +23,22 @@ all: clean untar nginx php phpredis
 
 nginx:
 	cd $(TARTMP)/nginx-$(NGINXVER) && ./configure --prefix=$(BUILD) \
-		--with-pcre=$(TARTMP)/pcre-$(PCREVER) && make && make install
+		--with-pcre=$(TARTMP)/pcre-$(PCREVER) && $(MAKE) && $(MAKE) install
 
-php:
+php: curl
 	cd $(TARTMP)/php-$(PHPVER) && ./configure --prefix=$(BUILD) \
-		--enable-cgi --enable-fpm --with-zlib && make && make install
+		--enable-cgi --enable-fpm --with-zlib --enable-soap \
+		--with-mysql=mysqlnd --with-pdo-mysql --with-curl=$(BUILD)  && \
+		$(MAKE) && $(MAKE) install
 	$(LN) -s phar.phar $(BUILD)/bin/phar
 
 phpredis:
 	cd $(TARTMP)/phpredis && $(BUILD)/bin/phpize && ./configure \
-		--with-php-config=$(BUILD)/bin/php-config && make && make install
+		--with-php-config=$(BUILD)/bin/php-config && $(MAKE) && $(MAKE) install
+
+curl:
+	cd $(TARTMP)/curl-$(CURLVER) && ./configure --prefix=$(BUILD) && \
+		$(MAKE) && $(MAKE) install
 
 untar:
 	$(MKDIR) $(TARTMP)
@@ -39,7 +46,8 @@ untar:
 		$(TAR) -zxf nginx-$(NGINXVER).tar.gz && \
 		$(TAR) -jxf php-$(PHPVER).tar.bz2 && \
 		$(TAR) -zxf pcre-$(PCREVER).tar.gz && \
-		$(TAR) -zxf phpredis.tar.gz
+		$(TAR) -zxf phpredis.tar.gz && \
+		$(TAR) -zxf curl-$(CURLVER).tar.gz
 
 install:
 	$(MKDIR) $(PREFIX)/run $(PREFIX)/log $(PREFIX)/logs
