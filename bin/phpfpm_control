@@ -101,10 +101,10 @@ case "${1}" in
 esac
 
 if [ $? -ne 0 ]; then
-    echo "[FAIL] ${1}" 1>&2
+    echo "[FAIL] phpfpm ${1}" 1>&2
     exit 1
 fi
 
-echo "[OK] ${1}"
+echo "[OK] phpfpm ${1}"
 exit 0
 
