@@ -6,7 +6,7 @@ PHPFPM_ROOT=`readlink -f "${PHPFPM_ROOT}"`
 
 PHPFPM_CONF=etc/php-fpm.conf
 PHPINI_CONF=etc/php.ini
-PHPFPM_PID=logs/php-fpm.pid
+PHPFPM_PID=run/php-fpm.pid
 EXTENSION_DIR=lib/php/extensions/no-debug-non-zts-20100525
 PHPFPM_PROC_NAME=php-fpm
 PHP_CONF_DIR=etc/php.d
