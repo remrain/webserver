@@ -23,14 +23,17 @@ all: clean untar nginx php phpredis
 
 nginx:
 	cd $(TARTMP)/nginx-$(NGINXVER) && ./configure --prefix=$(BUILD) \
-		--with-pcre=$(TARTMP)/pcre-$(PCREVER) && $(MAKE) && $(MAKE) install
+		--with-pcre=$(TARTMP)/pcre-$(PCREVER) --error-log-path=/dev/null \
+		&& $(MAKE) && $(MAKE) install
 
 php: curl
 	cd $(TARTMP)/php-$(PHPVER) && ./configure --prefix=$(BUILD) \
 		--enable-cgi --enable-fpm --with-zlib --enable-soap \
-		--with-mysql=mysqlnd --with-pdo-mysql --with-curl=$(BUILD)  && \
-		$(MAKE) && $(MAKE) install
+		--with-mysql=mysqlnd --with-pdo-mysql --with-curl=$(BUILD) \
+		--with-config-file-scan-dir=etc/php.d && $(MAKE) && $(MAKE) install
 	$(LN) -s phar.phar $(BUILD)/bin/phar
+	$(MV) $(BUILD)/bin/php $(BUILD)/bin/php-cli
+	$(CP) bin/php.script $(BUILD)/bin/php
 
 phpredis:
 	cd $(TARTMP)/phpredis && $(BUILD)/bin/phpize && ./configure \
@@ -50,7 +53,7 @@ untar:
 		$(TAR) -zxf curl-$(CURLVER).tar.gz
 
 install:
-	$(MKDIR) $(PREFIX)/run $(PREFIX)/log $(PREFIX)/logs
+	$(MKDIR) $(PREFIX)/run $(PREFIX)/log
 	$(CP) -r $(BUILD)/lib $(PREFIX)
 	$(CP) -r $(BUILD)/bin $(PREFIX)
 	$(CP) -r $(BUILD)/include $(PREFIX)

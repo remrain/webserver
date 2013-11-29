@@ -1,0 +1,15 @@
+#!/bin/sh
+BIN=`readlink -f "$0"`
+BIN_PATH=`dirname "${BIN}"`
+PHP_ROOT="${BIN_PATH}/.."
+
+PHPRC="${PHP_ROOT}/etc/php.ini"
+export PHPRC
+
+PHP_INI_SCAN_DIR="${PHP_ROOT}/etc/php.d"
+export PHP_INI_SCAN_DIR
+
+LD_LIBRARY_PATH="${PHP_ROOT}/lib/php/extensions/no-debug-non-zts-20100525:${PHP_ROOT}/lib:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH
+
+exec "${PHP_ROOT}/bin/php-cli" $@

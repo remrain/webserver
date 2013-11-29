@@ -7,44 +7,68 @@ PHPFPM_ROOT=`readlink -f "${PHPFPM_ROOT}"`
 PHPFPM_CONF=etc/php-fpm.conf
 PHPINI_CONF=etc/php.ini
 PHPFPM_PID=logs/php-fpm.pid
+EXTENSION_DIR=lib/php/extensions/no-debug-non-zts-20100525
+PHPFPM_PROC_NAME=php-fpm
+PHP_CONF_DIR=etc/php.d
 PHPFPM="./sbin/php-fpm -p . -c ${PHPINI_CONF} -y ${PHPFPM_CONF} -D -g ${PHPFPM_PID}"
-
 
 phpfpm_help(){
     echo "${0} <start|stop|restart>"
     exit 1
 }
 
+init_extension_conf(){
+    [ -e "${PHP_CONF_DIR}" ] || mkdir -p "${PHP_CONF_DIR}"
+    EXTENSION_CONF=${PHP_CONF_DIR}/extension_dir.ini
+    EXTENSION_LIB=`readlink -f "${EXTENSION_DIR}"`
+    EXTENSION_CONF_CONTENTS="extension_dir=\"${EXTENSION_LIB}\""
+
+    CONF_MD5=`md5sum "${EXTENSION_CONF}" 2>/dev/null |awk '{print $1}'`
+    STR_MD5=`echo "${EXTENSION_CONF_CONTENTS}" |md5sum |awk '{print $1}'`
+
+    [ "${CONF_MD5}" = "${STR_MD5}" ] || echo "${EXTENSION_CONF_CONTENTS}" >${EXTENSION_CONF}
+}
+
+phpfpm_checkhealth(){
+    [ -e "${PHPFPM_PID}" ] || return 1
+    PID=`cat "${PHPFPM_PID}" 2>/dev/null`
+    [ $? = 0 ] || return 1
+    ps --pid ${PID} |grep ${PHPFPM_PROC_NAME} &>/dev/null || return 1
+    return 0
+}
+
 phpfpm_start(){
+    init_extension_conf
+    phpfpm_checkhealth
+    if [ $? = 0 ]; then
+        echo "[WARN] php-fpm is aleady running!"
+        return 0
+    fi
     ${PHPFPM}
     return $?
 }
 
 phpfpm_stop(){
-    PID=`cat "${PHPFPM_PID}"`
+    phpfpm_checkhealth
     if [ $? != 0 ]; then
-        echo "${PHPFPM_PID} is not exists"
-        return 0
-    fi
-    ps --pid "${PID}" &>/dev/null
-    if [ $? != 0 ]; then
-        echo "php-fpm is not running"
+        echo "[WARN] php-fpm is not running!"
         return 0
     fi
     kill "${PID}"
     if [ $? != 0 ]; then
-        echo "kill ${PID} failed"
+        echo "[FAIL] kill ${PID} failed"
         return $?
     fi
     sleep 1
-    ps --pid "${PID}" &>/dev/null
+
+    phpfpm_checkhealth
     if [ $? = 0 ]; then
-        echo "php-fpm is still running, kill -9 php-fpm"
+        echo "[WARN] php-fpm is still running, kill -9 php-fpm"
         kill -9 "${PID}"
         sleep 1
-        ps --pid "${PID}" &>/dev/null
+        phpfpm_checkhealth
         if [ $? = 0 ]; then
-            echo "kill -9 php-fpm failed"
+            echo "[WARN] kill -9 php-fpm failed"
             return 1
         fi
     fi
@@ -56,8 +80,19 @@ phpfpm_restart(){
     return $?
 }
 
+phpfpm_reload(){
+    phpfpm_checkhealth
+    if [ $? != 0 ]; then
+        echo "[FAIL] php-fpm is not running!"
+        return 1
+    fi
+    PID=`cat "${PHPFPM_PID}"`
+    kill -USR1 "${PID}"
+    return $?
+}
+
 case "${1}" in
-    start|stop|restart)
+    start|stop|restart|reload)
         "phpfpm_${1}"
         ;;
     *)

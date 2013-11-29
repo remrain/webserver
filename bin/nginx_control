@@ -5,6 +5,8 @@ cd "${NGINX_ROOT}" || exit 1
 NGINX_ROOT=`readlink -f "${NGINX_ROOT}"`
 
 NGINX_CONF=etc/nginx.conf
+NGINX_PIDFILE=run/nginx.pid
+NGINX_PROC_NAME=nginx
 NGINX="./sbin/nginx -p . -c ${NGINX_CONF}"
 
 
@@ -13,12 +15,30 @@ nginx_help(){
     exit 1
 }
 
+nginx_checkhealth(){
+    [ -e "${NGINX_PIDFILE}" ] || return 1
+    PID=`cat "${NGINX_PIDFILE}" 2>/dev/null`
+    [ $? = 0 ] || return 1
+    ps --pid ${PID} |grep ${NGINX_PROC_NAME} &>/dev/null || return 1
+    return 0
+}
+
 nginx_start(){
+    nginx_checkhealth
+    if [ $? = 0 ]; then
+        echo "[WARN] nginx is already running!" 1>&2
+        return 0
+    fi
     ${NGINX}
     return $?
 }
 
 nginx_stop(){
+    nginx_checkhealth
+    if [ $? != 0 ]; then
+        echo "[WARN] nginx is not running!" 1>&2
+        return 0
+    fi
     ${NGINX} -s stop
     return $?
 }
@@ -43,10 +63,10 @@ case "${1}" in
 esac
 
 if [ $? -ne 0 ]; then
-    echo "[FAIL] ${1}" 1>&2
+    echo "[FAIL] nginx ${1}" 1>&2
     exit 1
 fi
 
-echo "[OK] ${1}"
+echo "[OK] nginx ${1}"
 exit 0
 

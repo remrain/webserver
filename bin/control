@@ -1,46 +1,51 @@
 #!/bin/sh
 
-NETSCAN_ROOT=`dirname "${0}"`/..
-cd "${NETSCAN_ROOT}" || exit 1
-NETSCAN_ROOT=`readlink -f "${NETSCAN_ROOT}"`
+LNMP_ROOT=`dirname "${0}"`/..
+cd "${LNMP_ROOT}" || exit 1
+LNMP_ROOT=`readlink -f "${LNMP_ROOT}"`
 
 PHPFPM_CONTROL=bin/phpfpm_control
 NGINX_CONTROL=bin/nginx_control
 
-netscan_help(){
+lnmp_help(){
     echo "${0} <start|stop|restart>"
     exit 1
 }
 
-netscan_start(){
+lnmp_start(){
     ${PHPFPM_CONTROL} start && ${NGINX_CONTROL} start
     return $?
 }
 
-netscan_stop(){
+lnmp_stop(){
     ${PHPFPM_CONTROL} stop && ${NGINX_CONTROL} stop
     return $?
 }
 
-netscan_restart(){
-    netscan_stop && netscan_start
+lnmp_reload(){
+    ${PHPFPM_CONTROL} reload && ${NGINX_CONTROL} reload
+    return $?
+}
+
+lnmp_restart(){
+    lnmp_stop && lnmp_start
     return $?
 }
 
 case "${1}" in
-    start|stop|restart)
-        "netscan_${1}"
+    start|stop|restart|reload)
+        "lnmp_${1}"
         ;;
     *)
-        netscan_help
+        lnmp_help
         ;;
 esac
 
 if [ $? -ne 0 ]; then
-    echo "[FAIL] ${1}" 1>&2
+    echo "[FAIL] all ${1}" 1>&2
     exit 1
 fi
 
-echo "[OK] ${1}"
+echo "[OK] all ${1}"
 exit 0
 
