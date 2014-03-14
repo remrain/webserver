@@ -59,7 +59,7 @@ phpfpm_stop(){
         echo "[FAIL] kill ${PID} failed"
         return $?
     fi
-    sleep 1
+    sleep 0.1
 
     phpfpm_checkhealth
     if [ $? = 0 ]; then
@@ -68,7 +68,7 @@ phpfpm_stop(){
         sleep 1
         phpfpm_checkhealth
         if [ $? = 0 ]; then
-            echo "[WARN] kill -9 php-fpm failed"
+            echo "[FAIL] kill -9 php-fpm failed"
             return 1
         fi
     fi
